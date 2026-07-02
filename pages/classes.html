@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <meta charset="UTF-8">
+
+    <link rel="icon" type="image/png" href="../assets/images/favicon.ico">
+
+<meta name="theme-color" content="#020169" media="(prefers-color-scheme: dark)">
+
+<meta name="theme-color" content="#EFC009" media="(prefers-color-scheme: light)">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+<link rel="stylesheet" href="../scripts/css/font-awesome.min.css">
+
+    <title>Class Directory | SCS CBT System</title>
+    <!-- Project Assets -->
+    <link rel="icon" type="image/png" href="../assets/images/favicon.ico">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <!-- Local Fallback -->
+    <link rel="stylesheet" href="../scripts/css/font-awesome.min.css" />
+    <script src="../scripts/auth.js" defer></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap');
+
+        :root {
+            --primary-blue: #020169;
+            --primary-light: #0d0b9e;
+            --accent-gold: #FEC009;
+            --accent-gold-hover: #e0a800;
+            --bg-gray: #f0f2f5;
+            --white: #ffffff;
+            --sidebar-narrow: 80px;
+            --sidebar-wide: 260px;
+            --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            --shadow: 0 4px 15px rgba(0,0,0,0.08);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: 'Montserrat', sans-serif; 
+            background-color: var(--bg-gray); 
+            color: #333;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* --- SIDEBAR NAVIGATION (DESKTOP VIEW ONLY) --- */
+        .sidebar {
+            width: var(--sidebar-narrow);
+            height: 100vh;
+            background: var(--primary-blue);
+            color: var(--white);
+            position: fixed;
+            left: 0; top: 0;
+            transition: var(--transition);
+            z-index: 1050;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 4px 0 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+            border-right: 2px solid rgba(254, 192, 9, 0.2);
+        }
+
+        .menu-list { list-style: none; margin-top: 80px; flex-grow: 1; }
+        .menu-item {
+            padding: 18px 25px;
+            display: flex; align-items: center;
+            cursor: pointer; transition: var(--transition);
+            color: rgba(255,255,255,0.7);
+            text-decoration: none;
+            border-left: 4px solid transparent;
+            white-space: nowrap;
+        }
+        .menu-item i { min-width: 30px; font-size: 1.2rem; text-align: center; }
+        .menu-item span { margin-left: 20px; opacity: 0; transition: opacity 0.2s; }
+        .sidebar:hover .menu-item span { opacity: 1; }
+        .menu-item:hover, .menu-item.active {
+            background: rgba(255,255,255,0.1);
+            color: var(--accent-gold);
+            border-left-color: var(--accent-gold);
+        }
+
+        @media (min-width: 1024px) { 
+            .sidebar:hover { width: var(--sidebar-wide); } 
+            main { 
+                margin-left: 105px !important; 
+                transition: var(--transition); 
+            }
+        }
+
+        /* --- SUPPRESS MOBILE NAVIGATION PANELS --- */
+        @media (max-width: 1023px) {
+            .sidebar { display: none !important; }
+            main { 
+                margin-left: 0 !important; 
+                padding: 30px 20px !important; 
+            }
+        }
+
+        /* --- MAIN CONTENT AREA --- */
+        main {
+            flex-grow: 1;
+            padding: 40px;
+            transition: var(--transition);
+            min-height: 100vh;
+        }
+
+        header { margin-bottom: 40px; }
+        header h1 { font-size: 2.2rem; color: var(--primary-blue); font-weight: 700; }
+        header p { color: #666; font-size: 1.1rem; border-bottom: 3px solid var(--accent-gold); display: inline-block; padding-bottom: 5px; }
+
+        /* --- GRIDS & CARDS --- */
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; }
+        .card { 
+            background: var(--white); 
+            border-radius: 15px; 
+            padding: 30px 20px; 
+            box-shadow: var(--shadow); 
+            cursor: pointer; 
+            text-align: center; 
+            transition: var(--transition);
+            border-top: 5px solid var(--primary-blue);
+            position: relative;
+        }
+        .card:hover { transform: translateY(-8px); border-top-color: var(--accent-gold); }
+        .hidden { display: none !important; }
+
+        .class-icon-wrapper {
+            width: 70px; height: 70px;
+            background: #f0f4ff;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 15px;
+            font-size: 1.8rem;
+            color: var(--primary-blue);
+            transition: 0.3s;
+        }
+        .card:hover .class-icon-wrapper { background: var(--accent-gold); color: var(--primary-blue); }
+        
+        .class-title { font-weight: 700; font-size: 1.3rem; color: var(--primary-blue); margin-bottom: 5px; }
+        .class-meta { color: #777; font-size: 0.9rem; font-weight: 500; }
+
+        /* --- TOGGLE LAYOUT SWITCH --- */
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin: 20px auto 40px auto;
+            background: var(--white);
+            padding: 12px 25px;
+            border-radius: 50px;
+            box-shadow: var(--shadow);
+            width: fit-content;
+            border: 1px solid #e2e8f0;
+        }
+        .toggle-label {
+            font-weight: 700;
+            font-size: 0.82rem;
+            color: var(--primary-blue);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 54px;
+            height: 28px;
+        }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider-switch {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: var(--primary-blue);
+            transition: .4s;
+            border-radius: 34px;
+        }
+        .slider-switch:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 4px;
+            bottom: 4px;
+            background-color: var(--accent-gold);
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider-switch { background-color: var(--primary-blue); }
+        input:checked + .slider-switch:before { transform: translateX(26px); }
+
+        /* --- AUTOMATIC DRAMATIC CAROUSEL --- */
+        .glass-card-container {
+            width: 100%;
+            overflow: hidden;
+            padding: 20px 0;
+            margin: 20px 0;
+            position: relative;
+        }
+        .glass-card-slider {
+            display: flex;
+            width: max-content;
+            gap: 20px;
+            padding: 0 10px;
+            animation: scroll-slide 35s linear infinite;
+        }
+        .glass-card-container:hover .glass-card-slider {
+            animation-play-state: paused;
+        }
+
+        .glass-card {
+            width: 180px;
+            height: 220px;
+            background: var(--white);
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            padding: 15px;
+            transition: var(--transition);
+        }
+        .glass-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--accent-gold);
+        }
+
+        /* SQUARE MORPH TRANSITION: Morph avatar from soft rounded square to circle on hover */
+        .avatar-morph {
+            width: 85px; height: 85px;
+            border-radius: 16px;
+            object-fit: cover;
+            border: 3px solid #e2e8f0;
+            margin-bottom: 12px;
+            transition: border-radius 0.6s cubic-bezier(0.25, 0.8, 0.25, 1), transform 0.5s ease;
+        }
+        .glass-card:hover .avatar-morph {
+            border-radius: 50%;
+            transform: scale(1.05) rotate(4deg);
+            border-color: var(--accent-gold);
+        }
+
+        .student-name { font-weight: 700; color: var(--primary-blue); font-size: 1rem; margin-bottom: 4px; }
+        .student-role-badge {
+            background: var(--primary-blue); color: white;
+            font-size: 0.65rem; padding: 4px 10px; border-radius: 20px;
+            text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700;
+        }
+
+        @keyframes scroll-slide {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+
+        /* --- STATIONARY GRID LAYOUT --- */
+        .stationary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 25px;
+        }
+        .stationary-card { cursor: default; }
+        .stationary-card .avatar-static {
+            width: 90px; height: 90px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #eee;
+            margin: 0 auto 15px auto;
+            display: block;
+        }
+
+        /* --- CLASSROOM DETAILED METADATA CARD --- */
+        .metadata-section {
+            background: var(--white);
+            border-radius: 16px;
+            padding: 35px;
+            box-shadow: var(--shadow);
+            max-width: 750px;
+            margin: 50px auto 0 auto;
+            text-align: center;
+            border-top: 4px solid var(--accent-gold);
+            animation: fadeInUp 0.6s ease;
+        }
+        .metadata-title {
+            color: var(--primary-blue);
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .metadata-photo-wrapper {
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+            background: #eee;
+        }
+        .metadata-photo-wrapper img {
+            width: 100%;
+            height: auto;
+            display: block;
+            object-fit: cover;
+            max-height: 400px;
+        }
+        .metadata-caption {
+            font-weight: 700;
+            color: var(--primary-blue);
+            font-size: 1rem;
+        }
+
+        /* Utility buttons */
+        .btn-back { 
+            background: var(--primary-blue); color: white; border: none; 
+            padding: 12px 25px; border-radius: 8px; cursor: pointer; 
+            margin-bottom: 30px; font-weight: 600; transition: 0.3s;
+        }
+        .btn-back:hover { background: #0402a3; box-shadow: var(--shadow); }
+        .loader { text-align: center; padding: 100px; color: var(--primary-blue); }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navigation Sidebar -->
+    <nav class="sidebar" id="sidebar">
+        <div class="menu-list">
+            <a href="dashboard.html" class="menu-item"><i class="fas fa-th-large"></i><span>Dashboard</span></a>
+            <a href="test-library.html" class="menu-item"><i class="fas fa-vial"></i><span>Tests</span></a>
+            <a href="notes.html" class="menu-item"><i class="fas fa-book-open"></i><span>Notes</span></a>
+            <a href="profile.html" class="menu-item"><i class="fas fa-user-circle"></i><span>Profile</span></a>
+            <a href="classes.html" class="menu-item active"><i class="fas fa-school"></i><span>Classes</span></a>
+            <div class="menu-item" onclick="localStorage.clear(); window.location.href='login.html'" style="margin-top:auto">
+                <i class="fas fa-sign-out-alt"></i><span>Logout</span>
+            </div>
+        </div>
+    </nav>
+
+    <main id="main-content">
+        <header>
+            <h1 id="page-title"><i class="fas fa-folder-open"></i> Class Directory</h1>
+            <p id="page-subtitle">SCS Academic Portal</p>
+        </header>
+
+        <div id="loader" class="loader">
+            <i class="fas fa-spinner fa-spin fa-3x"></i>
+            <p style="margin-top:15px">Synchronizing student records...</p>
+        </div>
+
+        <button id="btn-back" class="btn-back hidden" onclick="showClassList()">
+            <i class="fas fa-chevron-left"></i> Back to Classes
+        </button>
+
+        <!-- View layout toggler (Slider vs Grid) -->
+        <div class="toggle-container hidden" id="view-toggle-wrapper">
+            <span class="toggle-label"><i class="fas fa-play"></i> Slide Carousel</span>
+            <label class="switch">
+                <input type="checkbox" id="layout-toggle">
+                <span class="slider-switch"></span>
+            </label>
+            <span class="toggle-label"><i class="fas fa-th-large"></i> Stationary Grid</span>
+        </div>
+
+        <!-- Class Directory Grids -->
+        <div id="class-grid" class="grid"></div>
+        
+        <!-- Slider Mode layout container -->
+        <div id="student-slider-container" class="glass-card-container hidden">
+            <div class="glass-card-slider" id="studentSlider">
+                <!-- Javascript Generated Cards -->
+            </div>
+        </div>
+
+        <!-- Static Grid Mode layout container -->
+        <div id="student-grid-container" class="stationary-grid hidden">
+            <!-- Javascript Generated Cards -->
+        </div>
+
+        <!-- Classroom Detailed Metadata block (Form Teacher dynamically pulled from users.json) -->
+        <div id="class-metadata-section" class="metadata-section hidden">
+            <h3 class="metadata-title">
+                <i class="fas fa-chalkboard-teacher" style="color: var(--accent-gold);"></i> Form Teacher: <span id="metadata-teacher-name" style="color: var(--accent-gold-hover);"></span>
+            </h3>
+            <div class="metadata-photo-wrapper">
+                <img id="metadata-photo-img" src="" alt="Class Group Photo" onerror="this.src='../../api/graduation4.jpg?q=80&w=800&auto=format&fit=crop'">
+            </div>
+            <p class="metadata-caption" id="metadata-caption"></p>
+        </div>
+    </main>
+
+    <script>
+        let dbData = []; 
+        const classMap = new Map();
+        
+        let currentClassId = "";
+        let currentClassName = "";
+
+        const sidebar = document.getElementById('sidebar');
+        const classGrid = document.getElementById('class-grid');
+        const loader = document.getElementById('loader');
+        
+        const sliderContainer = document.getElementById('student-slider-container');
+        const sliderTrack = document.getElementById('studentSlider');
+        const gridContainer = document.getElementById('student-grid-container');
+        const toggleWrapper = document.getElementById('view-toggle-wrapper');
+        const layoutToggle = document.getElementById('layout-toggle');
+        
+        const backBtn = document.getElementById('btn-back');
+        const title = document.getElementById('page-title');
+        const subtitle = document.getElementById('page-subtitle');
+
+        const metadataSection = document.getElementById('class-metadata-section');
+        const metadataTeacher = document.getElementById('metadata-teacher-name');
+        const metadataPhoto = document.getElementById('metadata-photo-img');
+        const metadataCaption = document.getElementById('metadata-caption');
+
+        // Static Classroom Portfolio Photo Mapping corresponding to each Class ID
+        const classroomPhotos = {
+            'JS1': {
+                photo: "../assets/profile_pictures/BASIC_SEVEN_LAVENDER.jpeg",
+                caption: "Basic Seven Lavender Class Portfolio"
+            },
+            'JS2': {
+                photo: "../assets/profile_pictures/BASIC_EIGHT_TULIP.jpeg",
+                caption: "Basic Eight Tulip Class Portfolio"
+            },
+            'JS3': {
+                photo: "../assets/profile_pictures/BASIC_NINE_SUNFLOWER.jpeg",
+                caption: "Basic Nine Sunflower Class Portfolio"
+            }
+        };
+
+        async function loadData() {
+            try {
+                const response = await fetch('../data/users.json');
+                if (!response.ok) throw new Error("Database connection link failure");
+                dbData = await response.json();
+                processData();
+            } catch (error) {
+                console.error(error);
+                loader.innerHTML = `<i class="fas fa-exclamation-triangle fa-3x" style="color:red"></i><p>Connection Error. Check your local data files.</p>`;
+            }
+        }
+
+        function isStudent(user) {
+            const r = (user.role || "").toLowerCase();
+            return !r.includes('teacher') && !r.includes('webmaster') && !r.includes('parent') && !r.includes('admin');
+        }
+
+        // Dynamically find Form Teacher directly within local users.json data structure
+        function findFormTeacher(classId) {
+            return dbData.find(u => 
+                u.role && 
+                u.role.toLowerCase() === 'teacher' && 
+                String(u.classid) === String(classId)
+            );
+        }
+
+        function processData() {
+            dbData.forEach(user => {
+                if (isStudent(user) && user.classid) {
+                    if (!classMap.has(user.classid)) {
+                        classMap.set(user.classid, user.class); 
+                    }
+                }
+            });
+            loader.classList.add('hidden');
+            renderClasses();
+        }
+
+        function renderClasses() {
+            classGrid.innerHTML = '';
+            const sortedClasses = Array.from(classMap.entries()).sort();
+
+            sortedClasses.forEach(([id, name]) => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.onclick = () => {
+                    currentClassId = id;
+                    currentClassName = name;
+                    showStudents(id, name);
+                };
+
+                const count = dbData.filter(u => u.classid === id && isStudent(u)).length;
+
+                card.innerHTML = `
+                    <div class="class-icon-wrapper"><i class="fas fa-graduation-cap"></i></div>
+                    <div class="class-title">${name}</div>
+                    <div class="class-meta"><i class="fas fa-users"></i> ${count} Students</div>
+                    <div class="class-meta" style="font-size:0.7rem; margin-top:5px"><i class="fas fa-id-card"></i> ${id}</div>
+                `;
+                classGrid.appendChild(card);
+            });
+        }
+
+        function showStudents(classId, className) {
+            const students = dbData.filter(u => u.classid === classId && isStudent(u));
+            
+            classGrid.classList.add('hidden');
+            backBtn.classList.remove('hidden');
+            toggleWrapper.classList.remove('hidden');
+            
+            title.innerHTML = `<i class="fas fa-users"></i> ${className}`;
+            subtitle.innerText = `${students.length} Registered Students`;
+
+            // Clear previous render frames
+            sliderTrack.innerHTML = '';
+            gridContainer.innerHTML = '';
+
+            const isGridMode = layoutToggle.checked;
+
+            if (isGridMode) {
+                // Layout 2: Stationary Grid Layout
+                sliderContainer.classList.add('hidden');
+                gridContainer.classList.remove('hidden');
+
+                students.forEach(student => {
+                    const card = document.createElement('div');
+                    card.className = 'card stationary-card';
+                    const imgSrc = student.profilePicture || '../assets/profile_pictures/default.jpeg';
+
+                    card.innerHTML = `
+                        <div class="avatar-container">
+                            <img src="${imgSrc}" class="avatar-static" onerror="this.src='../assets/profile_pictures/default.jpeg'">
+                        </div>
+                        <div class="student-name">${student.name}</div>
+                        <div style="margin-bottom:10px">
+                            <span class="student-role-badge"><i class="fas fa-user-tag"></i> ${student.role}</span>
+                        </div>
+                        <div class="class-meta"><i class="fas fa-fingerprint"></i> ID: ${student.id}</div>
+                    `;
+                    gridContainer.appendChild(card);
+                });
+
+            } else {
+                // Layout 1: Infinite Scrolling Carousel with Square-to-Circle Morph Image Transition
+                gridContainer.classList.add('hidden');
+                sliderContainer.classList.remove('hidden');
+
+                // Duplicate database entries to enable seamless scrolling illusion
+                const sliderDataset = students.length > 3 ? [...students, ...students] : students;
+
+                sliderDataset.forEach(student => {
+                    const card = document.createElement('div');
+                    card.className = 'glass-card';
+                    const imgSrc = student.profilePicture || '../assets/profile_pictures/default.jpeg';
+
+                    card.innerHTML = `
+                        <img src="${imgSrc}" class="avatar-morph" onerror="this.src='../assets/profile_pictures/default.jpeg'">
+                        <div class="student-name">${student.name}</div>
+                        <div>
+                            <span class="student-role-badge">${student.role}</span>
+                        </div>
+                    `;
+                    sliderTrack.appendChild(card);
+                });
+            }
+
+            // Sync classroom detailed metadata (Form Teacher and Class Photo)
+            const teacherObj = findFormTeacher(classId);
+            const teacherName = teacherObj ? teacherObj.name : "Unassigned Staff Faculty";
+            
+            const photoDetails = classroomPhotos[classId];
+
+            metadataTeacher.innerText = teacherName;
+            if (photoDetails) {
+                metadataPhoto.src = photoDetails.photo;
+                metadataCaption.innerText = photoDetails.caption;
+                metadataSection.classList.remove('hidden');
+            } else {
+                // Use generic Unsplash fallback if local image asset is unmapped
+                metadataPhoto.src = "https://images.unsplash.com/photo-1577896851231-70ef18881754?q=80&w=800&auto=format&fit=crop";
+                metadataCaption.innerText = `${className} Portfolio Profile`;
+                metadataSection.classList.remove('hidden');
+            }
+
+            window.scrollTo(0,0);
+        }
+
+        // Layout state change listener
+        layoutToggle.addEventListener('change', () => {
+            if (currentClassId) {
+                showStudents(currentClassId, currentClassName);
+            }
+        });
+
+        function showClassList() {
+            gridContainer.classList.add('hidden');
+            sliderContainer.classList.add('hidden');
+            backBtn.classList.add('hidden');
+            toggleWrapper.classList.add('hidden');
+            metadataSection.classList.add('hidden');
+            
+            classGrid.classList.remove('hidden');
+            title.innerHTML = `<i class="fas fa-folder-open"></i> Class Directory`;
+            subtitle.innerText = "Select a class to view records";
+            
+            currentClassId = "";
+            currentClassName = "";
+        }
+
+        loadData();
+    </script>
+</body>
+</html>

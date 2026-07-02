@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Dashboard JSON Editor | SCS CBT Portal</title>
+  <link rel="icon" type="image/png" href="../assets/images/favicon.ico">
+  
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="../scripts/css/font-awesome.min.css">
+
+  <style>
+        :root {
+            --primary-blue: #020169;
+            --primary-light: #0d0b9e;
+            --accent-gold: #FEC009;
+            --accent-gold-hover: #e0a800;
+            --text-dark: #1a1a1a;
+            --text-muted: #6c757d;
+            --white: #ffffff;
+            --bg-light: #f4f7fe;
+            --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            --shadow-sm: 0 2px 8px rgba(2, 1, 105, 0.05);
+            --shadow-md: 0 10px 25px rgba(2, 1, 105, 0.08);
+            --shadow-lg: 0 20px 40px rgba(2, 1, 105, 0.12);
+            --success: #2e7d32;
+            --danger: #d32f2f;
+            --info: #0288d1;
+            --sidebar-wide: 260px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* --- TOAST SYSTEM --- */
+        #toast-container {
+            position: fixed;
+            bottom: 24px; right: 24px;
+            z-index: 9999;
+            display: flex; flex-direction: column; gap: 12px;
+            max-width: 380px; width: 100%;
+        }
+        .toast {
+            background: var(--white); color: #333; padding: 16px 20px;
+            border-radius: 10px; box-shadow: var(--shadow-lg);
+            display: flex; align-items: center; gap: 12px;
+            border-left: 5px solid #ccc; transform: translateY(20px);
+            opacity: 0; transition: var(--transition);
+            font-size: 0.88rem; font-weight: 600;
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast-success { border-left-color: var(--success); }
+        .toast-success i { color: var(--success); }
+        .toast-danger { border-left-color: var(--danger); }
+        .toast-danger i { color: var(--danger); }
+        .toast-info { border-left-color: var(--info); }
+        .toast-info i { color: var(--info); }
+
+        /* --- NAVIGATION SIDEBAR (ZERO OVERLAP DESKTOP SETUP) --- */
+        .hamburger-icon {
+            display: block; position: fixed; top: 15px; left: 15px;
+            font-size: 20px; color: var(--primary-blue); cursor: pointer;
+            z-index: 1100; background-color: var(--accent-gold);
+            width: 44px; height: 44px; border-radius: 8px;
+            box-shadow: var(--shadow-md); transition: var(--transition);
+            border: none; display: flex; align-items: center; justify-content: center;
+        }
+        .hamburger-icon:hover { background-color: var(--accent-gold-hover); transform: scale(1.05); }
+
+        .main-nav { 
+            width: var(--sidebar-wide); height: 100vh; 
+            background-color: var(--primary-blue); color: #fff; 
+            position: fixed; left: -280px; top: 0; 
+            z-index: 1000; transition: var(--transition);
+            padding-top: 80px; border-right: 2px solid rgba(254, 192, 9, 0.2);
+        }
+        .main-nav.open { left: 0; }
+
+        .main-nav .menu-item { 
+            display: flex; align-items: center; padding: 16px 24px; 
+            cursor: pointer; transition: var(--transition); 
+            border-left: 4px solid transparent; color: rgba(255,255,255,0.8);
+            text-decoration: none; font-weight: 500; font-size: 0.95rem;
+        }
+        .main-nav .menu-item i { font-size: 18px; min-width: 30px; text-align: center; }
+        .main-nav .menu-item span { margin-left: 15px; white-space: nowrap; }
+        .main-nav .menu-item:hover, .main-nav .menu-item.active { 
+            background-color: rgba(255, 255, 255, 0.05); 
+            color: var(--accent-gold); border-left-color: var(--accent-gold); 
+        }
+
+        .profile-display-icon { 
+            position: fixed; top: 15px; right: 15px; 
+            width: 46px; height: 48px; border-radius: 50%; 
+            object-fit: cover; border: 2.5px solid var(--accent-gold); 
+            cursor: pointer; z-index: 1100; 
+            box-shadow: var(--shadow-md); transition: var(--transition); 
+        }
+        .profile-display-icon:hover { transform: scale(1.08); }
+
+        /* --- DESKTOP VS MOBILE COLUMN LAYOUTS --- */
+        main { padding: 40px; padding-top: 90px; flex-grow: 1; }
+
+        @media (min-width: 1024px) {
+            .hamburger-icon { display: none !important; }
+            .main-nav {
+                left: 0 !important; 
+                width: var(--sidebar-wide) !important;
+                padding-top: 20px;
+            }
+            /* Persistent left separation margin of 280px guarantees 0% overlap under all states */
+            main { 
+                margin-left: 280px !important; 
+                width: calc(100% - 280px) !important;
+                transition: var(--transition); 
+            }
+        }
+
+        @media (max-width: 1023px) {
+            main {
+                margin-left: 0 !important;
+                width: 100% !important;
+                padding: 20px !important;
+                padding-top: 80px !important;
+            }
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 1.15fr 0.85fr;
+            gap: 30px;
+            width: 100%;
+        }
+        @media (max-width: 968px) { .container { grid-template-columns: 1fr; } }
+
+        .panel {
+            background: var(--white);
+            border-radius: 16px;
+            padding: 35px;
+            box-shadow: var(--shadow-sm);
+            border-top: 5px solid var(--primary-blue);
+            transition: var(--transition);
+        }
+        .panel:hover { box-shadow: var(--shadow-md); }
+
+        h1.page-title {
+            font-size: 2.2rem; font-weight: 800; color: var(--primary-blue);
+            letter-spacing: -1px; margin-bottom: 5px;
+        }
+        .subtitle {
+            color: var(--text-muted); font-size: 1rem; border-bottom: 3px solid var(--accent-gold);
+            display: inline-block; padding-bottom: 5px; font-weight: 500; margin-bottom: 40px;
+        }
+
+        h2 {
+            color: var(--primary-blue); margin-bottom: 25px; font-size: 1.3rem;
+            font-weight: 700; border-bottom: 2px solid #e2e8f0; padding-bottom: 12px;
+        }
+
+        /* Viewing Filter Selector Row */
+        .role-selector { display: flex; gap: 10px; margin-bottom: 30px; flex-wrap: wrap; }
+        .role-btn {
+            padding: 10px 18px; background: #e2e8f0; border: none;
+            border-radius: 30px; cursor: pointer; font-weight: 700; font-size: 0.8rem;
+            transition: var(--transition); text-transform: uppercase; letter-spacing: 0.5px;
+            color: #475569;
+        }
+        .role-btn.active {
+            background: var(--primary-blue); color: var(--white);
+            box-shadow: 0 4px 10px rgba(2, 1, 105, 0.2);
+        }
+
+        /* Form Styling */
+        .form-group { margin-bottom: 20px; position: relative; }
+        label { display: block; margin-bottom: 10px; color: var(--primary-blue); font-weight: 700; font-size: 0.82rem; text-transform: uppercase; }
+        input, select, textarea {
+            width: 100%; padding: 13px 16px; border: 2px solid #e2e8f0;
+            border-radius: 8px; font-size: 0.9rem; transition: var(--transition);
+            font-family: inherit; outline: none; font-weight: 500;
+        }
+        input:focus, select:focus, textarea:focus {
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(2, 1, 105, 0.12);
+        }
+
+        /* Custom Checkbox Multi-Role Selector */
+        .multi-role-checkboxes {
+            display: flex; gap: 12px; flex-wrap: wrap;
+            background: #f8fafc; padding: 15px; border-radius: 8px;
+            border: 2px solid #e2e8f0;
+        }
+        .checkbox-container {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 0.8rem; font-weight: 700; color: var(--primary-blue);
+            text-transform: uppercase; cursor: pointer; user-select: none;
+        }
+        .checkbox-container input { width: 18px; height: 18px; cursor: pointer; accent-color: var(--primary-blue); }
+
+        /* Icon Dropdown Panel */
+        .icon-dropdown {
+            max-height: 200px; overflow-y: auto; border: 1px solid #e2e8f0;
+            border-radius: 8px; margin-top: 5px; background: white;
+            position: absolute; width: 100%; z-index: 1000; box-shadow: var(--shadow-md);
+        }
+        .icon-option {
+            padding: 12px 16px; cursor: pointer; display: flex;
+            align-items: center; gap: 12px; border-bottom: 1px solid #f1f5f9;
+            transition: var(--transition);
+        }
+        .icon-option:hover { background: #f8fafc; }
+        .icon-option i { font-size: 1.2rem; width: 30px; text-align: center; color: var(--primary-blue); }
+
+        .icon-preview {
+            display: flex; align-items: center; gap: 15px; padding: 15px;
+            background: #f8fafc; border-radius: 8px; margin-top: 15px;
+            border: 1px solid #e2e8f0; font-weight: 600; font-size: 0.88rem;
+        }
+        .icon-preview i { font-size: 1.8rem; color: var(--primary-blue); }
+
+        /* Buttons */
+        .btn {
+            background: var(--primary-blue); color: white; border: none;
+            padding: 14px 28px; border-radius: 10px; cursor: pointer;
+            font-size: 0.88rem; font-weight: 700; width: 100%;
+            transition: var(--transition); text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .btn:hover { background: var(--primary-light); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(2, 1, 105, 0.15); }
+        .btn-secondary { background: #cbd5e1; color: #475569; }
+        .btn-secondary:hover { background: #94a3b8; }
+
+        /* Current Links List */
+        .dashboard-items { max-height: 400px; overflow-y: auto; padding-right: 5px; }
+        .dashboard-item {
+            background: #f8fafc; padding: 20px; border-radius: 10px;
+            margin-bottom: 12px; border-left: 4px solid var(--primary-blue);
+            transition: var(--transition); border: 1px solid #e2e8f0;
+            border-left-width: 4px;
+        }
+        .dashboard-item:hover { transform: translateX(3px); border-color: var(--accent-gold); }
+        .dashboard-item-header { display: flex; align-items: center; gap: 15px; margin-bottom: 8px; }
+        .dashboard-item-header i { font-size: 1.4rem; color: var(--primary-blue); }
+        .dashboard-item-title { font-weight: 700; color: var(--primary-blue); flex: 1; font-size: 0.95rem; }
+        .dashboard-item-desc { font-size: 0.85rem; color: #555; margin-bottom: 8px; line-height: 1.4; }
+        .dashboard-item-link { font-size: 0.78rem; color: #888; font-weight: 600; font-family: monospace; }
+        
+        .item-actions { display: flex; gap: 8px; margin-top: 15px; }
+        .btn-small { padding: 8px 16px; font-size: 0.75rem; width: auto; margin: 0; }
+        .btn-edit { background: #16a34a; }
+        .btn-edit:hover { background: #15803d; }
+        .btn-delete { background: var(--danger); }
+        .btn-delete:hover { background: #b91c1c; }
+
+        /* Output console */
+        .code-output {
+            background: #1e1e2e; color: #abe9b3; padding: 24px;
+            border-radius: 12px; font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 0.85rem; overflow-x: auto; position: relative;
+            max-height: 500px; overflow-y: auto; box-shadow: inset 0 2px 8px rgba(0,0,0,0.3);
+            line-height: 1.5;
+        }
+        .copy-btn {
+            position: absolute; top: 15px; right: 15px;
+            background: var(--primary-blue); color: white; border: none;
+            padding: 8px 16px; border-radius: 6px; cursor: pointer;
+            font-size: 0.75rem; font-weight: 700; transition: var(--transition);
+        }
+        .copy-btn:hover { background: var(--primary-light); }
+
+        /* Footer */
+        footer { 
+            background-color: var(--primary-blue); color: #fff; 
+            padding: 45px 20px 20px; margin-top: auto; width: 100%;
+            border-top: 4px solid var(--accent-gold);
+        }
+        .footer-content { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 40px; max-width: 1200px; margin: 0 auto 30px auto; }
+        .footer-column h3 { color: var(--accent-gold); margin-bottom: 20px; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        .footer-links li { margin-bottom: 12px; display: flex; align-items: center; gap: 10px; font-size: 0.9rem; }
+        .footer-links i { color: var(--accent-gold); min-width: 16px; text-align: center; }
+        .footer-links a { color: rgba(255, 255, 255, 0.8); text-decoration: none; transition: 0.3s; }
+        .footer-links a:hover { color: var(--accent-gold); }
+        .copyright { text-align: center; padding-top: 20px; border-top: 1px solid rgba(255, 255, 255, 0.1); font-size: 0.8rem; opacity: 0.6; }
+  </style>
+</head>
+<body>
+
+   <div id="toast-container"></div>
+
+   <button class="hamburger-icon" id="hamburger-icon" aria-label="Toggle navigation menu">
+        <i class="fas fa-bars"></i>
+   </button>
+
+   <img id="user-image-display" src="../assets/images/logo.png" alt="User Profile Placeholder" class="profile-display-icon">
+
+   <nav class="main-nav" id="main-nav" aria-label="Main Navigation">
+        <ul class="menu-list">
+            <li class="menu-item" onclick="window.location.href='dashboard.html'">
+                <i class="fas fa-tachometer-alt"></i><span>Dashboard</span>
+            </li>
+            <li class="menu-item" onclick="window.location.href='profile.html'">
+                <i class="fas fa-user"></i><span>My Profile</span>
+            </li>
+            <li class="menu-item active" onclick="window.location.href='notes.html'">
+                <i class="fas fa-book-open"></i><span>Lecture Notes</span>
+            </li>
+            <li class="menu-item" id="logout-button-sidebar" onclick="localStorage.clear(); window.location.href='login.html'">
+                <i class="fas fa-sign-out-alt"></i><span>Logout</span>
+            </li>
+        </ul>
+   </nav>
+
+   <main id="main-content">
+        <header>
+            <h1 class="page-title"><i class="fas fa-cubes" style="color: var(--accent-gold); margin-right: 10px;"></i> Dashboard Configurator</h1>
+            <p class="subtitle">SCS Interface Construction Unit</p>
+        </header>
+
+        <div class="container">
+            <!-- Form Card -->
+            <div class="panel">
+                <h2>Choose Active View</h2>
+                <div class="role-selector">
+                    <button class="role-btn active" onclick="selectRole('student')">Student</button>
+                    <button class="role-btn" onclick="selectRole('teacher')">Teacher</button>
+                    <button class="role-btn" onclick="selectRole('admin')">Admin</button>
+                    <button class="role-btn" onclick="selectRole('webmaster')">Webmaster</button>
+                    <button class="role-btn" onclick="selectRole('parent')">Parent</button>
+                </div>
+
+                <h2 id="formTitle">Add New Option</h2>
+                <form id="linkForm">
+                    <div class="form-group">
+                        <label for="linkTitle">Title</label>
+                        <input type="text" id="linkTitle" placeholder="e.g., View Profile" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="linkDesc">Description (Optional)</label>
+                        <textarea id="linkDesc" placeholder="e.g., Manage your personal information and settings."></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="linkUrl">Link Option (URL Path)</label>
+                        <input type="text" id="linkUrl" placeholder="e.g., profile.html" required>
+                    </div>
+
+                    <!-- Dynamic Multi-Role Checkbox Selector -->
+                    <div class="form-group">
+                        <label>Provision to Dashboards</label>
+                        <div class="multi-role-checkboxes">
+                            <label class="checkbox-container">
+                                <input type="checkbox" name="target-roles" value="student" checked>
+                                <span class="checkmark"></span> Student
+                            </label>
+                            <label class="checkbox-container">
+                                <input type="checkbox" name="target-roles" value="teacher">
+                                <span class="checkmark"></span> Teacher
+                            </label>
+                            <label class="checkbox-container">
+                                <input type="checkbox" name="target-roles" value="admin">
+                                <span class="checkmark"></span> Admin
+                            </label>
+                            <label class="checkbox-container">
+                                <input type="checkbox" name="target-roles" value="webmaster">
+                                <span class="checkmark"></span> Webmaster
+                            </label>
+                            <label class="checkbox-container">
+                                <input type="checkbox" name="target-roles" value="parent">
+                                <span class="checkmark"></span> Parent
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="iconSearch">Choose Icon Class</label>
+                        <input type="text" id="iconSearch" placeholder="Search icons... (e.g., user, book, cog)">
+                        <div id="iconDropdown" class="icon-dropdown" style="display: none;"></div>
+                    </div>
+                    
+                    <div class="icon-preview" id="iconPreview" style="display: none;">
+                        <i class="fas fa-link"></i>
+                        <span>No icon selected</span>
+                    </div>
+                    
+                    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                        <button type="submit" class="btn" id="submitBtn">➕ Add Link</button>
+                        <button type="button" class="btn btn-secondary" id="cancelBtn" style="display: none;" onclick="cancelEdit()">Cancel</button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Output list and configuration code -->
+            <div class="panel">
+                <h2>Active Links — <span id="currentRole" style="color: var(--accent-gold-hover);">Student</span></h2>
+                <div class="dashboard-items" id="dashboardItems">
+                    <p style="text-align: center; color: #999; padding: 40px 0;">Synchronizing options...</p>
+                </div>
+                
+                <h2 style="margin-top: 40px;">Configuration Output (JSON)</h2>
+                <div style="position: relative;">
+                    <div class="code-output">
+                        <button class="copy-btn" onclick="copyJSON()">📋 Copy JSON</button>
+                        <pre id="jsonOutput">{}</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+   </main>
+
+   <footer>
+        <div class="footer-content">
+            <div class="footer-column">
+                <h3>About SCS CBT</h3>
+                <p style="opacity: 0.75; font-size: 0.9rem; line-height: 1.6;">A leading educational technology platform developed for St. Christopher School to facilitate modern learning and assessment.</p>
+            </div>
+            <div class="footer-column">
+                <h3>System Links</h3>
+                <ul class="footer-links">
+                    <li><i class="fas fa-angle-right"></i><a href="dashboard.html">Dashboard</a></li>
+                    <li><i class="fas fa-angle-right"></i><a href="profile.html">My Profile</a></li>
+                    <li><i class="fas fa-angle-right"></i><a href="notes.html">Lecture Notes</a></li>
+                    <li><i class="fas fa-angle-right"></i><a href="#" onclick="localStorage.clear(); window.location.href='login.html'">Logout</a></li>
+                </ul>
+            </div>
+            <div class="footer-column">
+                <h3>Contact & Location</h3>
+                <ul class="footer-links">
+                    <li><i class="fas fa-map-marker-alt"></i> 5 Obi Ikechukwu Road, Agbor-Obi, Delta State</li>
+                    <li><i class="fas fa-envelope"></i> info@scs.org.ng</li>
+                </ul>
+            </div>
+        </div>
+        <div class="copyright">
+            <p>&copy; 2026 St. Christopher School. All Rights Reserved. | Designed for Educational Technology</p>
+        </div>
+   </footer>
+
+   <script>
+        const hamburgerIcon = document.getElementById('hamburger-icon');
+        const mainNav = document.getElementById('main-nav');
+        
+        if (hamburgerIcon) {
+            hamburgerIcon.onclick = () => {
+                mainNav.classList.toggle('open');
+            };
+        }
+
+        // Notification Toast Engine
+        function toast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const item = document.createElement('div');
+            item.className = `toast toast-${type}`;
+            
+            let icon = 'fa-check-circle';
+            if (type === 'danger') icon = 'fa-exclamation-circle';
+            if (type === 'info') icon = 'fa-info-circle';
+
+            item.innerHTML = `
+                <i class="fas ${icon}" style="font-size: 1.1rem;"></i>
+                <span>${message}</span>
+            `;
+            container.appendChild(item);
+
+            setTimeout(() => item.classList.add('show'), 50);
+            setTimeout(() => {
+                item.classList.remove('show');
+                setTimeout(() => item.remove(), 300);
+            }, 3500);
+        }
+
+        let dashboardData = null; // No pre-loaded default fallback
+        let currentRole = 'student';
+        let icons = [];
+        let selectedIcon = 'fas fa-link';
+        let editingIndex = -1;
+
+        // Fetch Live Dashboard Config database file
+        const loadDashboardConfig = async () => {
+            try {
+                const res = await fetch('../data/dashboard-config.json');
+                if (!res.ok) throw new Error("File not found or CORS constraint active.");
+                dashboardData = await res.json();
+                toast("Database sync: Loaded live dashboard options.", "success");
+                updateDashboard();
+                updateJSON();
+            } catch (err) {
+                console.error("Critical: Failed to load config database:", err);
+                dashboardData = null; // Ensure empty value so error can be spotted
+                
+                document.getElementById('dashboardItems').innerHTML = `
+                    <div style="text-align: center; padding: 40px 20px; color: var(--danger); font-weight: 600;">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 2.2rem; margin-bottom: 15px;"></i>
+                        <p>Configuration Sync Error: Unable to locate or parse '../data/dashboard-config.json'.</p>
+                    </div>
+                `;
+                document.getElementById('jsonOutput').textContent = "/* ERROR: Failed to load config database. Please ensure file exists at '../data/dashboard-config.json' */\n{}";
+                toast("Failed to load dashboard configuration database.", "danger");
+            }
+        };
+
+        // Load Icon Classes
+        fetch('../scripts/css/font-awesome.min.css')
+            .then(response => response.text())
+            .then(css => {
+                const iconMatches = css.match(/\.fa-([a-z0-9-]+):before/g) || [];
+                const iconSet = new Set();
+                
+                iconMatches.forEach(match => {
+                    const name = match.match(/fa-([a-z0-9-]+)/)[1];
+                    if (!name.match(/^(lg|2x|3x|4x|5x|fw|ul|li|border|pull|spin|pulse|rotate|flip|stack|inverse)$/)) {
+                        iconSet.add(`fas fa-${name}`);
+                    }
+                });
+                
+                icons = Array.from(iconSet).sort();
+                populateIconDropdown(icons);
+            })
+            .catch(() => {
+                icons = ["fas fa-user", "fas fa-book", "fas fa-cog", "fas fa-school", "fas fa-chart-line", "fas fa-pencil-alt", "fas fa-vial", "fas fa-users-cog", "fas fa-qrcode"];
+                populateIconDropdown(icons);
+            });
+
+        function populateIconDropdown(iconList) {
+            const dropdown = document.getElementById('iconDropdown');
+            dropdown.innerHTML = '';
+            
+            iconList.slice(0, 100).forEach(iconClass => {
+                const option = document.createElement('div');
+                option.className = 'icon-option';
+                const iconName = iconClass.split(' fa-')[1] || iconClass;
+                option.innerHTML = `<i class="${iconClass}"></i><span>${iconName}</span>`;
+                option.onclick = () => selectIcon(iconClass);
+                dropdown.appendChild(option);
+            });
+        }
+
+        function selectIcon(iconClass) {
+            selectedIcon = iconClass;
+            const preview = document.getElementById('iconPreview');
+            preview.style.display = 'flex';
+            const iconName = iconClass.split(' fa-')[1] || iconClass;
+            preview.innerHTML = `<i class="${iconClass}"></i><span>${iconName}</span>`;
+            document.getElementById('iconDropdown').style.display = 'none';
+            document.getElementById('iconSearch').value = iconName;
+        }
+
+        document.getElementById('iconSearch').addEventListener('input', (e) => {
+            const search = e.target.value.toLowerCase();
+            const dropdown = document.getElementById('iconDropdown');
+            
+            if (search.length > 0) {
+                const filtered = icons.filter(icon => icon.includes(search));
+                populateIconDropdown(filtered);
+                dropdown.style.display = 'block';
+            } else {
+                dropdown.style.display = 'none';
+            }
+        });
+
+        document.getElementById('iconSearch').addEventListener('focus', () => {
+            if (icons.length > 0) document.getElementById('iconDropdown').style.display = 'block';
+        });
+
+        function selectRole(role) {
+            currentRole = role;
+            document.querySelectorAll('.role-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById('currentRole').textContent = role.charAt(0).toUpperCase() + role.slice(1);
+            updateDashboard();
+            updateJSON();
+        }
+
+        function updateDashboard() {
+            if (!dashboardData) return;
+            const container = document.getElementById('dashboardItems');
+            const items = dashboardData[currentRole] || [];
+            
+            if (items.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #999; padding: 40px 0;">No active layout items established for this role.</p>';
+                return;
+            }
+            
+            container.innerHTML = items.map((item, index) => `
+                <div class="dashboard-item">
+                    <div class="dashboard-item-header">
+                        <i class="${item.icon}"></i>
+                        <div class="dashboard-item-title">${item.title}</div>
+                    </div>
+                    <div class="dashboard-item-desc">${item.description || 'No description provided'}</div>
+                    ${item.link ? `<div class="dashboard-item-link">Destination URL: ${item.link}</div>` : ''}
+                    <div class="item-actions">
+                        <button class="btn btn-small btn-edit" type="button" onclick="editItem(${index})">Edit</button>
+                        <button class="btn btn-small btn-delete" type="button" onclick="deleteItem(${index})">Delete</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function editItem(index) {
+            if (!dashboardData) return;
+            editingIndex = index;
+            const item = dashboardData[currentRole][index];
+            
+            document.getElementById('linkTitle').value = item.title;
+            document.getElementById('linkDesc').value = item.description || '';
+            document.getElementById('linkUrl').value = item.link || '';
+            
+            // Set checkboxes matching editing role
+            document.querySelectorAll('input[name="target-roles"]').forEach(cb => {
+                cb.checked = (cb.value === currentRole);
+            });
+
+            selectedIcon = item.icon;
+            const iconName = item.icon.split(' fa-')[1] || item.icon;
+            document.getElementById('iconSearch').value = iconName;
+            document.getElementById('iconPreview').style.display = 'flex';
+            document.getElementById('iconPreview').innerHTML = `<i class="${item.icon}"></i><span>${iconName}</span>`;
+            
+            document.getElementById('formTitle').textContent = 'Modify Selected Option';
+            document.getElementById('submitBtn').textContent = '💾 Save Option Changes';
+            document.getElementById('cancelBtn').style.display = 'block';
+            
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            toast(`Preparing configurations for link: "${item.title}"`, "info");
+        }
+
+        function deleteItem(index) {
+            if (!dashboardData) return;
+            if (confirm('Verify Request:\nAre you sure you want to remove this navigation item from this dashboard role?')) {
+                dashboardData[currentRole].splice(index, 1);
+                updateDashboard();
+                updateJSON();
+                toast("Navigation link deleted from database.", "info");
+            }
+        }
+
+        function cancelEdit() {
+            editingIndex = -1;
+            document.getElementById('linkForm').reset();
+            document.getElementById('iconPreview').style.display = 'none';
+            document.getElementById('formTitle').textContent = 'Add New Option';
+            document.getElementById('submitBtn').textContent = '➕ Add Option';
+            document.getElementById('cancelBtn').style.display = 'none';
+        }
+
+        document.getElementById('linkForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            if (!dashboardData) {
+                toast("System Error: Cannot modify configurations while database is disconnected.", "danger");
+                return;
+            }
+            
+            const newItem = {
+                title: document.getElementById('linkTitle').value,
+                description: document.getElementById('linkDesc').value,
+                icon: selectedIcon,
+                link: document.getElementById('linkUrl').value
+            };
+            
+            // Fetch selected target roles to apply this card to
+            const checkedRoles = Array.from(document.querySelectorAll('input[name="target-roles"]:checked')).map(cb => cb.value);
+            
+            if (checkedRoles.length === 0) {
+                toast("Error: You must assign this link to at least one role.", "danger");
+                return;
+            }
+
+            if (editingIndex >= 0) {
+                // Modify within current active view role
+                dashboardData[currentRole][editingIndex] = newItem;
+                cancelEdit();
+                toast("Configuration changes updated.", "success");
+            } else {
+                // Add new link to ALL checked dashboard roles
+                checkedRoles.forEach(role => {
+                    if (!dashboardData[role]) dashboardData[role] = [];
+                    // Ensure unique listings to avoid visual duplicates
+                    if (!dashboardData[role].some(item => item.title === newItem.title && item.link === newItem.link)) {
+                        dashboardData[role].push({...newItem});
+                    }
+                });
+                document.getElementById('linkForm').reset();
+                document.getElementById('iconPreview').style.display = 'none';
+                toast(`Link successfully added to ${checkedRoles.length} roles.`, "success");
+            }
+            
+            updateDashboard();
+            updateJSON();
+        });
+
+        function updateJSON() {
+            if (!dashboardData) return;
+            document.getElementById('jsonOutput').textContent = JSON.stringify(dashboardData, null, 2);
+        }
+
+        function copyJSON() {
+            if (!dashboardData) {
+                toast("No configuration loaded to copy.", "danger");
+                return;
+            }
+            const json = document.getElementById('jsonOutput').textContent;
+            navigator.clipboard.writeText(json).then(() => {
+                const btn = document.querySelector('.copy-btn');
+                btn.textContent = '✅ Copied!';
+                toast("JSON Configuration copied to system clipboard.", "success");
+                setTimeout(() => btn.textContent = '📋 Copy JSON', 2000);
+            });
+        }
+
+        // Initialize Workspace
+        loadDashboardConfig();
+  </script>
+</body>
+</html>
